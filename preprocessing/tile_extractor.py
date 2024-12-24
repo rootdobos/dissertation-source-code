@@ -22,7 +22,6 @@ class TileExtractor():
         #     return
 
         #try:
-        print(os.path.join(self.input_dir, f"{idx}.tiff"))
         img_slide=open_slide(os.path.join(self.input_dir,"train_images" ,f"{idx}.tiff"))
         mask_slide=open_slide(os.path.join(self.input_dir, "train_label_masks",f"{idx}_mask.tiff"))
         if not os.path.exists(image_subdir_path):
@@ -39,16 +38,17 @@ class TileExtractor():
         mask_zoom= DeepZoomGenerator(mask,tile_size=self.tile_size,overlap=0,limit_bounds=True)
         for c in coords:
             self.save_tile(tiles_zoom,c,os.path.join(saving_dir,"tiles"))
-            self.save_tile(mask_zoom,c,os.path.join(saving_dir,"mask"))
+            self.save_tile(mask_zoom,c,os.path.join(saving_dir,"mask"),grayscale=True)
 
     
-    def save_tile(self, tiles,coord,saving_dir):
+    def save_tile(self, tiles,coord,saving_dir, grayscale=False):
         if not os.path.exists(saving_dir):
             os.mkdir(saving_dir)
         temp_tile=tiles.get_tile(len(tiles.level_tiles)-1,coord)
-        temp_tile_RGB = temp_tile.convert('RGB')
-        temp_tile_np = np.array(temp_tile_RGB)
+        temp_tile_np = np.array(temp_tile)
 
+        if grayscale:
+            temp_tile_np=temp_tile_np[:,:,0] *127
         im = Image.fromarray(temp_tile_np)
         im.save(os.path.join(saving_dir, f"{coord[0]}_{coord[1]}.png"), format='PNG', quality=100)
 
