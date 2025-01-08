@@ -16,39 +16,42 @@ class TileExtractor():
         self.output_dir=output_dir
         self.tile_size=tile_size
     
-    def process_image(self,idx):
+    def process_image(self,idx, provider=None):
         image_subdir_path=os.path.join(self.output_dir,idx)
-        # if os.path.exists(image_subdir_path):
-        #     return
-
-        #try:
-        img_slide=open_slide(os.path.join(self.input_dir,"train_images" ,f"{idx}.tiff"))
-        mask_slide=open_slide(os.path.join(self.input_dir, "train_label_masks",f"{idx}_mask.tiff"))
-        if not os.path.exists(image_subdir_path):
-            os.mkdir(image_subdir_path)
-        passed_coords=self.pyramid_tile_extracting(img_slide,8,220,210)
-        self.save_tiles_from_coordinates(img_slide,
-                                         mask_slide,
-                                            passed_coords,
-                                           image_subdir_path)
-        # except:
-        #     print(f"Error in extracting {idx}")
-    def save_tiles_from_coordinates(self, slide,mask,coords,saving_dir):
+        if os.path.exists(image_subdir_path):
+            return
+        try:
+            img_slide=open_slide(os.path.join(self.input_dir,"train_images" ,f"{idx}.tiff"))
+            mask_slide=open_slide(os.path.join(self.input_dir, "train_label_masks",f"{idx}_mask.tiff"))
+            if not os.path.exists(image_subdir_path):
+                os.mkdir(image_subdir_path)
+            passed_coords=self.pyramid_tile_extracting(img_slide,8,220,210)
+            self.save_tiles_from_coordinates(img_slide,
+                                            mask_slide,
+                                                passed_coords,
+                                            image_subdir_path,
+                                            provider)
+        except:
+            print(f"Error in extracting {idx}")
+    def save_tiles_from_coordinates(self, slide,mask,coords,saving_dir,provider):
         tiles_zoom= DeepZoomGenerator(slide,tile_size=self.tile_size,overlap=0,limit_bounds=True)
         mask_zoom= DeepZoomGenerator(mask,tile_size=self.tile_size,overlap=0,limit_bounds=True)
         for c in coords:
             self.save_tile(tiles_zoom,c,os.path.join(saving_dir,"tiles"))
-            self.save_tile(mask_zoom,c,os.path.join(saving_dir,"mask"),grayscale=True)
+            self.save_tile(mask_zoom,c,os.path.join(saving_dir,"mask"),grayscale=provider)
 
     
-    def save_tile(self, tiles,coord,saving_dir, grayscale=False):
+    def save_tile(self, tiles,coord,saving_dir, grayscale=None):
         if not os.path.exists(saving_dir):
             os.mkdir(saving_dir)
         temp_tile=tiles.get_tile(len(tiles.level_tiles)-1,coord)
         temp_tile_np = np.array(temp_tile)
 
-        if grayscale:
+        if grayscale=="karolinska":
             temp_tile_np=temp_tile_np[:,:,0] *127
+        elif grayscale=="radboud":
+            temp_tile_np=temp_tile_np[:,:,0] *51
+            
         im = Image.fromarray(temp_tile_np)
         im.save(os.path.join(saving_dir, f"{coord[0]}_{coord[1]}.png"), format='PNG', quality=100)
 
