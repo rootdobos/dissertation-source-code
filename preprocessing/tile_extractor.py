@@ -12,9 +12,13 @@ class TileExtractor():
                  input_dir,
                  output_dir,
                  tile_size):
+        
         self.input_dir=input_dir
         self.output_dir=output_dir
         self.tile_size=tile_size
+
+        if not os.path.exists(self.output_dir):
+            os.mkdir(self.output_dir)
     
     def process_image(self,idx, provider=None):
         image_subdir_path=os.path.join(self.output_dir,idx)
@@ -31,7 +35,7 @@ class TileExtractor():
                                                 passed_coords,
                                             image_subdir_path,
                                             provider)
-        except:
+        except Exception as e:
             print(f"Error in extracting {idx}")
     def save_tiles_from_coordinates(self, slide,mask,coords,saving_dir,provider):
         tiles_zoom= DeepZoomGenerator(slide,tile_size=self.tile_size,overlap=0,limit_bounds=True)
@@ -51,7 +55,7 @@ class TileExtractor():
             temp_tile_np=temp_tile_np[:,:,0] *127
         elif grayscale=="radboud":
             temp_tile_np=temp_tile_np[:,:,0] *51
-            
+
         im = Image.fromarray(temp_tile_np)
         im.save(os.path.join(saving_dir, f"{coord[0]}_{coord[1]}.png"), format='PNG', quality=100)
 
