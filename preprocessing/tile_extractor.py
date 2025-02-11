@@ -11,11 +11,13 @@ class TileExtractor():
     def __init__(self,
                  input_dir,
                  output_dir,
-                 tile_size):
+                 tile_size,
+                 inverse_zoom_level=1):
         
         self.input_dir=input_dir
         self.output_dir=output_dir
         self.tile_size=tile_size
+        self.inverse_zoom_level=inverse_zoom_level
 
         if not os.path.exists(self.output_dir):
             os.mkdir(self.output_dir)
@@ -29,14 +31,14 @@ class TileExtractor():
             mask_slide=open_slide(os.path.join(self.input_dir, "train_label_masks",f"{idx}_mask.tiff"))
             if not os.path.exists(image_subdir_path):
                 os.mkdir(image_subdir_path)
-            passed_coords=self.pyramid_tile_extracting(img_slide,8,220,210)
+            passed_coords=self.pyramid_tile_extracting(img_slide,8,230,20)
             self.save_tiles_from_coordinates(img_slide,
                                             mask_slide,
                                                 passed_coords,
                                             image_subdir_path,
                                             provider)
         except Exception as e:
-            print(f"Error in extracting {idx}")
+            print(f"Error in extracting {idx} ")
     def save_tiles_from_coordinates(self, slide,mask,coords,saving_dir,provider):
         tiles_zoom= DeepZoomGenerator(slide,tile_size=self.tile_size,overlap=0,limit_bounds=True)
         mask_zoom= DeepZoomGenerator(mask,tile_size=self.tile_size,overlap=0,limit_bounds=True)
@@ -48,7 +50,7 @@ class TileExtractor():
     def save_tile(self, tiles,coord,saving_dir, grayscale=None):
         if not os.path.exists(saving_dir):
             os.mkdir(saving_dir)
-        temp_tile=tiles.get_tile(len(tiles.level_tiles)-1,coord)
+        temp_tile=tiles.get_tile(len(tiles.level_tiles)-self.inverse_zoom_level,coord)
         temp_tile_np = np.array(temp_tile)
 
         if grayscale=="karolinska":
@@ -60,7 +62,7 @@ class TileExtractor():
         im.save(os.path.join(saving_dir, f"{coord[0]}_{coord[1]}.png"), format='PNG', quality=100)
 
 
-    def pyramid_tile_extracting(self, slide,down_sampling_factor, avg_threshold,median_threshold):
+    def pyramid_tile_extracting(self, slide,down_sampling_factor, avg_threshold,std_threshold):
         """
         On every pyramid level the base image is smaller, but the sizes of the tiles are the same
         (for example 256), so this is why we need to create an image pyramid with smaller tile size,
@@ -73,18 +75,17 @@ class TileExtractor():
         
         # EXPLANATION CODE
         # for subs in range(5):
-        #     zoom_level=len(tiles.level_tiles)-1-subs
-        #     tiles_shape= tiles.level_tiles[zoom_level]
-        #     cols, rows= tiles_shape
-        #     print(f" ORIGINAL Cols: {cols} Rows: {rows} Shape of tile: {tiles.get_tile(zoom_level,(0,0))}")
+            # zoom_level=len(tiles.level_tiles)-1-subs
+            # tiles_shape= tiles.level_tiles[zoom_level]
+            # cols, rows= tiles_shape
+            # print(f" ORIGINAL Cols: {cols} Rows: {rows} Shape of tile: {tiles.get_tile(zoom_level,(0,0))}")
 
-        #     zoom_level=len(down_sampled_tiles.level_tiles)-1-subs
-        #     tiles_shape= down_sampled_tiles.level_tiles[zoom_level]
-        #     cols, rows= tiles_shape
-        #     print(f" DOWNSAMPLED Cols: {cols} Rows: {rows} Shape of tile: {down_sampled_tiles.get_tile(zoom_level,(0,0))}")
+            # zoom_level=len(down_sampled_tiles.level_tiles)-1-subs
+            # tiles_shape= down_sampled_tiles.level_tiles[zoom_level]
+            # cols, rows= tiles_shape
+            # print(f" DOWNSAMPLED Cols: {cols} Rows: {rows} Shape of tile: {down_sampled_tiles.get_tile(zoom_level,(0,0))}")
         # EXPLANATION CODE END
-
-        tiles_shape= tiles.level_tiles[len(tiles.level_tiles)-1]
+        tiles_shape= tiles.level_tiles[len(tiles.level_tiles)-self.inverse_zoom_level]
         cols, rows= tiles_shape
         down_tile_level_corresponding_level=down_sampled_tiles.level_tiles.index(tiles_shape)
 
@@ -93,7 +94,14 @@ class TileExtractor():
             for row in range(1,rows-1):
                 temp_tile=down_sampled_tiles.get_tile(down_tile_level_corresponding_level,(col,row))
                 mean,median,std=self.tile_statistics(temp_tile)
-                if mean<avg_threshold:
+                #if mean<avg_threshold:
+                if std>std_threshold or mean<avg_threshold :
+                    #DEBUG
+                    # tile_RGB=temp_tile.convert('RGB')
+                    # tile_np=np.array(tile_RGB)
+                    # cv2.imwrite(f"C:/tmp/test/{col}_{row}.png",tile_np)
+                    #END
+                    print(f"passed stats: AVG:{mean} STD:{std}")
                     passed_coords.append((col,row))
         return passed_coords
 
