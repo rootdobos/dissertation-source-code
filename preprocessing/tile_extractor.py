@@ -101,7 +101,7 @@ class TileExtractor():
                     # tile_np=np.array(tile_RGB)
                     # cv2.imwrite(f"C:/tmp/test/{col}_{row}.png",tile_np)
                     #END
-                    print(f"passed stats: AVG:{mean} STD:{std}")
+                    #print(f"passed stats: AVG:{mean} STD:{std}")
                     passed_coords.append((col,row))
         return passed_coords
 
