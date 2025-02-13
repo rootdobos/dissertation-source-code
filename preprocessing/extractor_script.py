@@ -10,13 +10,15 @@ if __name__ == '__main__':
     data_dir=args[1]
     output_dir=args[2]
     tile_size=int(args[3])
-    pool_size=int(args[4])
+    izl=int(args[4])
+    pool_size=int(args[5])
     df = pd.read_csv(os.path.join(data_dir,'train.csv'))
 
     tile_extractor=TileExtractor(
         input_dir=data_dir,
         output_dir=output_dir,
-        tile_size=tile_size
+        tile_size=tile_size,
+        inverse_zoom_level=izl
     )
 
     with Pool(processes=pool_size) as pool:
