@@ -13,5 +13,6 @@ def clean_dataset_csv(datadir,input_csv,output_csv):
     filtered_df.set_index("image_id",inplace=True)
     filtered_df.to_csv(output_csv)
     return filtered_df
-
-
+def clean_folder_by_csv(datadir,input_csv):
+    existing_data=list_all_folder_in_directory(datadir)
+    #TODO: remove folders without csv entry
