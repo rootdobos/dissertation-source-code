@@ -1,7 +1,7 @@
 from torch import nn
 import torch.nn.functional as F
 import torch
-from attention import Attn_Net_Gated
+from .attention import Attn_Net_Gated
 import numpy as np
 class Clam(nn.Module):
     def __init__(self,feature_vector_length=1024,dropout=0., k_sample=8,n_classes=2,
@@ -22,7 +22,7 @@ class Clam(nn.Module):
         self.instance_classifiers=nn.ModuleList(instance_classifiers)
 
         self.k_sample=k_sample
-        self.instance_loss=loss_fn
+        self.instance_loss_fn=loss_fn
         self.n_classes=n_classes
         self.subtyping=subtyping
 
@@ -41,7 +41,7 @@ class Clam(nn.Module):
             all_targets=[]
             inst_labels=F.one_hot(label,num_classes=self.n_classes).squeeze()
             for i in range(self.n_classes):
-                inst_label=inst_label[1].item()
+                inst_label=inst_labels[1].item()
                 classifier=self.instance_classifiers[i]
                 if inst_label==1:
                     instance_loss,preds,targets=self.inst_eval(A[i],h,classifier)
@@ -56,7 +56,7 @@ class Clam(nn.Module):
                         continue
                 total_inst_loss+=instance_loss
             if self.subtyping:
-                total_inst_loss/=len(self.n_classes)
+                total_inst_loss/=self.n_classes
 
         M = torch.mm(A, h) 
 
