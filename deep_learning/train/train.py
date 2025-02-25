@@ -31,7 +31,8 @@ def train(model,df, feature_path,epochs):
 	early_stopping = EarlyStopping(patience = 20, stop_epoch=50, verbose = True)
 	
 	for epoch in range(epochs):
-		train_loop(epoch, model, train_loader, optimizer, 6, 0.3,loss_fn)
+		train_loop(epoch, model, train_loader, optimizer, 6, 0.5,loss_fn)
+		return
 		validate_clam(model, val_loader, 6, loss_fn)
 		
 	
@@ -52,7 +53,6 @@ def train_loop(epoch,model,loader,optimizer,n_classes,bag_weight,loss_fn):
 		loss=loss_fn(logits,label)
 		loss_value=loss.item()
 
-		optimizer.zero_grad()
 
 		instance_loss=instance_dict['instance_loss']
 		inst_count+=1
@@ -61,9 +61,6 @@ def train_loop(epoch,model,loader,optimizer,n_classes,bag_weight,loss_fn):
 
 		total_loss=bag_weight*loss +(1-bag_weight)*instance_loss
 		
-		total_loss.backward()
-		optimizer.step()
-
 		inst_preds=instance_dict['inst_preds']
 		inst_labels=instance_dict['inst_labels']
 		inst_logger.log_batch(inst_preds,inst_labels)
@@ -74,8 +71,14 @@ def train_loop(epoch,model,loader,optimizer,n_classes,bag_weight,loss_fn):
 				'label: {}, bag_size: {}'.format(label.item(), data.size(0)))
 		error=calculate_error(Y_hat,label)
 		train_error += error
+
+		total_loss.backward()
+		optimizer.step()
+		optimizer.zero_grad()
+
 	train_loss /= len(loader)
 	train_error /= len(loader)
+	train_inst_loss/=len(loader)
 
 	print('Epoch: {}, train_loss: {:.4f}, train_clustering_loss:  {:.4f}, train_error: {:.4f}'.format(epoch, train_loss, train_inst_loss,  train_error))
 	for i in range(n_classes):
@@ -142,6 +145,7 @@ def get_optim(model, args):
 	return optimizer
 
 def calculate_error(Y_hat, Y):
+	"""classification error rate"""
 	error = 1. - Y_hat.float().eq(Y.float()).float().mean().item()
 
 	return error
