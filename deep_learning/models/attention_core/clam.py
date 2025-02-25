@@ -41,7 +41,7 @@ class Clam(nn.Module):
             all_targets=[]
             inst_labels=F.one_hot(label,num_classes=self.n_classes).squeeze()
             for i in range(self.n_classes):
-                inst_label=inst_labels[1].item()
+                inst_label=inst_labels[i].item()
                 classifier=self.instance_classifiers[i]
                 if inst_label==1:
                     instance_loss,preds,targets=self.inst_eval(A[i],h,classifier)

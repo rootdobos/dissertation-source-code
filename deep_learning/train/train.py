@@ -32,6 +32,7 @@ def train(model,df, feature_path,epochs):
 	
 	for epoch in range(epochs):
 		train_loop(epoch, model, train_loader, optimizer, 6, 0.5,loss_fn)
+		return
 		validate_clam(model, val_loader, 6, loss_fn)
 		
 	
