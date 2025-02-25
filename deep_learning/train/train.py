@@ -32,7 +32,6 @@ def train(model,df, feature_path,epochs):
 	
 	for epoch in range(epochs):
 		train_loop(epoch, model, train_loader, optimizer, 6, 0.5,loss_fn)
-		return
 		validate_clam(model, val_loader, 6, loss_fn)
 		
 	
@@ -40,10 +39,8 @@ def train_loop(epoch,model,loader,optimizer,n_classes,bag_weight,loss_fn):
 	model.train()
 	acc_logger=Accuracy_Logger(n_classes=n_classes)
 	inst_logger=Accuracy_Logger(n_classes=n_classes)
-	train_loss=0.
-	train_error=0.
-	train_inst_loss=0.
-	inst_count=0.
+	train_loss, train_accuracy,train_inst_loss,inst_count=0. , 0. , 0. , 0
+	confusion_matrix=np.zeros((n_classes,n_classes))
 	print('\n')
 	for batch_idx,(data,label) in enumerate(loader):
 		data,label=data.to(device).squeeze(),label.to(device)
@@ -69,33 +66,34 @@ def train_loop(epoch,model,loader,optimizer,n_classes,bag_weight,loss_fn):
 		if(batch_idx+1)%20==0:
 			print('batch {}, loss: {:.4f}, instance_loss: {:.4f}, weighted_loss: {:.4f}, '.format(batch_idx, loss_value, instance_loss_value, total_loss.item()) + 
 				'label: {}, bag_size: {}'.format(label.item(), data.size(0)))
-		error=calculate_error(Y_hat,label)
-		train_error += error
-
+		accuracy=calculate_equal_predictions(Y_hat,label)
+		confusion_matrix[label][Y_hat]+=1
+		train_accuracy += accuracy
 		total_loss.backward()
 		optimizer.step()
 		optimizer.zero_grad()
 
 	train_loss /= len(loader)
-	train_error /= len(loader)
+	train_accuracy /= len(loader)
 	train_inst_loss/=len(loader)
 
-	print('Epoch: {}, train_loss: {:.4f}, train_clustering_loss:  {:.4f}, train_error: {:.4f}'.format(epoch, train_loss, train_inst_loss,  train_error))
+	print('Epoch {} Summary: train_loss: {:.4f}, train_clustering_loss:  {:.4f}, train_accuracy: {:.4f}'.format(epoch, train_loss, train_inst_loss,  train_accuracy))
+	print("Slide Accuracy:")
 	for i in range(n_classes):
 		acc, correct, count = acc_logger.get_summary(i)
 		print('class {}: acc {}, correct {}/{}'.format(i, acc, correct, count))
+	print("Patch Accuracy:")
+	for i in range(n_classes):
+		acc, correct, count = inst_logger.get_summary(i)
+		print('class {}: acc {}, correct {}/{}'.format(i, acc, correct, count))
+	print(confusion_matrix)
 
 def validate_clam( model, loader, n_classes, loss_fn = None):
 	model.eval()
 	acc_logger = Accuracy_Logger(n_classes=n_classes)
 	inst_logger = Accuracy_Logger(n_classes=n_classes)
-	val_loss = 0.
-	val_error = 0.
-	
-	val_inst_loss = 0.
-	val_inst_acc = 0.
-	inst_count=0
-
+	val_loss,val_accuracy,val_inst_loss,inst_count= 0. , 0. , 0. , 0
+	confusion_matrix=np.zeros((n_classes,n_classes))
 	prob = np.zeros((len(loader), n_classes))
 	labels = np.zeros(len(loader))
 	sample_size = model.k_sample
@@ -122,16 +120,18 @@ def validate_clam( model, loader, n_classes, loss_fn = None):
 			prob[batch_idx] = Y_prob.cpu().numpy()
 			labels[batch_idx] = label.item()
 			
-			error = calculate_error(Y_hat, label)
-			val_error += error
+			accuracy = calculate_equal_predictions(Y_hat, label)
+			val_accuracy += accuracy
+			confusion_matrix[label][Y_hat]+=1
 
-	val_error /= len(loader)
+	val_accuracy /= len(loader)
 	val_loss /= len(loader)
 
-	print('\nVal Set, val_loss: {:.4f}, val_error: {:.4f}'.format(val_loss, val_error))
+	print('\nVal Set, val_loss: {:.4f}, val_accuracy: {:.4f}'.format(val_loss, val_accuracy))
 	for i in range(n_classes):
 		acc, correct, count = acc_logger.get_summary(i)
 		print('class {}: acc {}, correct {}/{}'.format(i, acc, correct, count))
+	print(confusion_matrix)
 	 
 
 
@@ -144,10 +144,8 @@ def get_optim(model, args):
 		raise NotImplementedError
 	return optimizer
 
-def calculate_error(Y_hat, Y):
+def calculate_equal_predictions(Y_hat, Y):
 	"""classification error rate"""
-	error = 1. - Y_hat.float().eq(Y.float()).float().mean().item()
-
-	return error
+	return Y_hat.float().eq(Y.float()).float().mean().item()
 
 
