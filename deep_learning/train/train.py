@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 
 from deep_learning.loaders.feature_dataset import FeatureDataset
-
+from deep_learning.utils.metrics import quadratic_weighted_kappa_cf,compute_precision_recall_f1
 from torch import nn
 from torchinfo import summary
 import torch.optim as optim
@@ -78,6 +78,8 @@ def train_loop(epoch,model,loader,optimizer,n_classes,bag_weight,loss_fn):
 	train_inst_loss/=len(loader)
 
 	print('Epoch {} Summary: train_loss: {:.4f}, train_clustering_loss:  {:.4f}, train_accuracy: {:.4f}'.format(epoch, train_loss, train_inst_loss,  train_accuracy))
+	_,_,_,macro_f1,weighted_f1=compute_precision_recall_f1(confusion_matrix)
+	print(f"Macro-F1: {macro_f1:.4f}; Weighted F1:{weighted_f1:.4f}")
 	print("Slide Accuracy:")
 	for i in range(n_classes):
 		acc, correct, count = acc_logger.get_summary(i)
@@ -87,6 +89,8 @@ def train_loop(epoch,model,loader,optimizer,n_classes,bag_weight,loss_fn):
 		acc, correct, count = inst_logger.get_summary(i)
 		print('class {}: acc {}, correct {}/{}'.format(i, acc, correct, count))
 	print(confusion_matrix)
+	qwk_score=quadratic_weighted_kappa_cf(confusion_matrix,n_classes)
+	print(f"Quadratic Weighted Kappa: {qwk_score:.4f}")
 
 def validate_clam( model, loader, n_classes, loss_fn = None):
 	model.eval()
