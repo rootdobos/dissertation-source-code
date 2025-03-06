@@ -1,5 +1,6 @@
 import numpy as np
 import torch 
+import os
 class Accuracy_Logger(object):
     """Accuracy logger"""
     def __init__(self, n_classes):
@@ -34,45 +35,34 @@ class Accuracy_Logger(object):
             acc = float(correct) / count
         return acc, correct, count
         
-class EarlyStopping:
-    """Early stops the training if validation loss doesn't improve after a given patience."""
-    def __init__(self, patience=20, stop_epoch=50, verbose=False):
-        """
-        Args:
-            patience (int): How long to wait after last time validation loss improved.
-                            Default: 20
-            stop_epoch (int): Earliest epoch possible for stopping
-            verbose (bool): If True, prints a message for each validation loss improvement. 
-                            Default: False
-        """
-        self.patience = patience
-        self.stop_epoch = stop_epoch
-        self.verbose = verbose
-        self.counter = 0
-        self.best_score = None
-        self.early_stop = False
-        self.val_loss_min = np.Inf
+class EpochLogger():
 
-    def __call__(self, epoch, val_loss, model, ckpt_name = 'checkpoint.pt'):
-
-        score = -val_loss
-
-        if self.best_score is None:
-            self.best_score = score
-            self.save_checkpoint(val_loss, model, ckpt_name)
-        elif score < self.best_score:
-            self.counter += 1
-            print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
-            if self.counter >= self.patience and epoch > self.stop_epoch:
-                self.early_stop = True
-        else:
-            self.best_score = score
-            self.save_checkpoint(val_loss, model, ckpt_name)
-            self.counter = 0
-
-    def save_checkpoint(self, val_loss, model, ckpt_name):
-        '''Saves model when validation loss decrease.'''
-        if self.verbose:
-            print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
-        torch.save(model.state_dict(), ckpt_name)
-        self.val_loss_min = val_loss
+    def __init__(self,log_dir,n_classes):
+        self.log_dir=log_dir
+        self.n_classes=n_classes
+        os.makedirs(log_dir, exist_ok=True)
+        self.train_log=open(os.path.join(log_dir,"train_log.csv"),"w")
+        class_list=[f"class{i}" for i in range(n_classes)]
+        self.train_log.write(f"epoch,loss,instance_loss,accuracy,macro_f1,weighted_f1,qwk,{','.join(class_list)}\n")
+        self.validation_log=open(os.path.join(log_dir,"validation_log.csv"),"w")
+        self.validation_log.write(f"epoch,loss,instance_loss,accuracy,macro_f1,weighted_f1,qwk,{','.join(class_list)}\n")
+        
+    def log_train(self,epoch,losses,metrics,acc_logger):
+        class_acc=[]
+        for i in range(self.n_classes):
+            acc, correct, count = acc_logger.get_summary(i)
+            class_acc.append(f"{acc}")
+        self.train_log.write((f"{epoch},{losses['loss']},{losses['instance_loss']},"
+                              f"{metrics['accuracy']},{metrics['macro_f1']},{metrics['weighted_f1']},{metrics['qwk']},"
+                              f"{','.join(class_acc)}\n"))
+    def log_validate(self,epoch,losses,metrics,acc_logger):
+        class_acc=[]
+        for i in range(self.n_classes):
+            acc, correct, count = acc_logger.get_summary(i)
+            class_acc.append(f"{acc}")
+        self.validation_log.write((f"{epoch},{losses['loss']},{losses['instance_loss']},"
+                              f"{metrics['accuracy']},{metrics['macro_f1']},{metrics['weighted_f1']},{metrics['qwk']},"
+                              f"{','.join(class_acc)}\n"))
+    def __del__(self):
+        self.train_log.close()
+        self.validation_log.close()

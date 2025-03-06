@@ -45,6 +45,7 @@ if __name__ == '__main__':
     
     model.eval()
     model.to(device)
-    for slide in  tqdm(list(df['image_id'])):
-        features=extract_features(model,transform,os.path.join(data_dir,slide,"tiles"))
-        torch.save(features,os.path.join(output_dir,"{}.pt".format(slide)))
+    with torch.inference_mode():
+        for slide in  tqdm(list(df['image_id'])):
+            features=extract_features(model,transform,os.path.join(data_dir,slide,"tiles"))
+            torch.save(features,os.path.join(output_dir,"{}.pt".format(slide)))
