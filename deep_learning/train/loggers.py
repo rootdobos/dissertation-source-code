@@ -55,6 +55,7 @@ class EpochLogger():
         self.train_log.write((f"{epoch},{losses['loss']},{losses['instance_loss']},"
                               f"{metrics['accuracy']},{metrics['macro_f1']},{metrics['weighted_f1']},{metrics['qwk']},"
                               f"{','.join(class_acc)}\n"))
+        self.train_log.flush()
     def log_validate(self,epoch,losses,metrics,acc_logger):
         class_acc=[]
         for i in range(self.n_classes):
@@ -63,6 +64,7 @@ class EpochLogger():
         self.validation_log.write((f"{epoch},{losses['loss']},{losses['instance_loss']},"
                               f"{metrics['accuracy']},{metrics['macro_f1']},{metrics['weighted_f1']},{metrics['qwk']},"
                               f"{','.join(class_acc)}\n"))
+        self.validation_log.flush()
     def __del__(self):
         self.train_log.close()
         self.validation_log.close()

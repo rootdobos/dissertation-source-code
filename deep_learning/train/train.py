@@ -11,12 +11,14 @@ import os
 from deep_learning.train.loggers import Accuracy_Logger, EpochLogger
 import datetime
 from queue import Queue
-
+from deep_learning.utils.early_stopping import EarlyStopping
 device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def train(model,df, feature_path,epochs,patience,log_dir):
+def train(model,df, feature_path,epochs,patience,min_delta,bag_weight,log_dir):
 	now = datetime.datetime.now()
-	log_dir=os.path.join(log_dir,now.strftime("%Y%m%d_%H%M%S"))
+
+	unique_path="{}_p{}_b{:.0f}".format(now.strftime("%Y%m%d_%H%M%S"),patience,bag_weight*100)
+	log_dir=os.path.join(log_dir,unique_path)
 	train_df, validation_df = train_test_split(df, test_size=0.2, random_state=42)
 
 	train_dataset=FeatureDataset(train_df,feature_path)
@@ -26,34 +28,21 @@ def train(model,df, feature_path,epochs,patience,log_dir):
 	val_loader=DataLoader(val_dataset, batch_size=1, shuffle=True,num_workers=0)
 
 	loss_fn=nn.CrossEntropyLoss()
-	instance_loss_fn=nn.CrossEntropyLoss()
 
 	_= model.to(device)
 
-	optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=2e-4, weight_decay=1e-5)
+	optimizer = optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-4, weight_decay=1e-4)
+	scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=2, factor=0.5, verbose=True)
 	logger=EpochLogger(log_dir,6)
 	
-	last_k=Queue()
-	count_p=0
+	early_stopping=EarlyStopping(log_dir,patience,min_delta)
 	for epoch in range(epochs):
-		t_losses, t_metrics,t_confusion_matrix, t_acc_logger=train_loop(epoch, model, train_loader, optimizer, 6, 0.5,loss_fn)
-		v_losses, v_metrics,v_confusion_matrix, v_acc_logger=validate_clam(model, val_loader, 6, loss_fn)
+		t_losses, t_metrics,t_confusion_matrix, t_acc_logger=train_loop(epoch, model, train_loader, optimizer, 6,bag_weight,loss_fn)
+		v_losses, v_metrics,v_confusion_matrix, v_acc_logger=validate_clam(model, val_loader, 6, loss_fn,scheduler)
 		logger.log_train(epoch,t_losses,t_metrics,t_acc_logger)
 		logger.log_validate(epoch,v_losses,v_metrics,v_acc_logger)
-		if epoch>0:
-			if min(list(last_k.queue))>=t_losses['loss']:
-				count_p=0
-			else:
-				count_p+=1
-				print(f"Loss not improved since {count_p} epoch")
-				if count_p>patience:
-					print(f"Early Stop!")
-					break
-		last_k.put(t_losses['loss'])
-		torch.save(model.state_dict(),os.path.join(log_dir,f"model_weights_{epoch}.pth"))
-
-
-	#torch.save(model.state_dict(),os.path.join(log_dir,"model_weights.pth"))
+		if early_stopping(epoch,v_losses["loss"],model):
+			break
 
 	del logger
 
@@ -121,7 +110,7 @@ def train_loop(epoch,model,loader,optimizer,n_classes,bag_weight,loss_fn):
 	}
 	return losses, metrics,confusion_matrix, acc_logger
 
-def validate_clam( model, loader, n_classes, loss_fn = None):
+def validate_clam( model, loader, n_classes, loss_fn,scheduler):
 	torch.cuda.empty_cache()
 	model.eval()
 	acc_logger = Accuracy_Logger(n_classes=n_classes)
@@ -160,6 +149,9 @@ def validate_clam( model, loader, n_classes, loss_fn = None):
 
 	val_accuracy /= len(loader)
 	val_loss /= len(loader)
+	val_inst_loss /= len(loader)
+
+	scheduler.step(val_loss)
 
 	print('\nVal Set, val_loss: {:.4f}, val_accuracy: {:.4f}'.format(val_loss, val_accuracy))
 	_,_,_,macro_f1,weighted_f1=compute_precision_recall_f1(confusion_matrix)
