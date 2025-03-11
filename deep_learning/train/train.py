@@ -10,7 +10,7 @@ import torch.optim as optim
 import os
 from deep_learning.train.loggers import Accuracy_Logger, EpochLogger
 import datetime
-from queue import Queue
+
 from deep_learning.utils.early_stopping import EarlyStopping
 device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
