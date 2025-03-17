@@ -80,3 +80,32 @@ def print_attention_scores_statistics(stats):
         print(f"\tMax: \t{v['max']}")
         print(f"\tMean: \t{v['mean']}")
         print(f"\tStd: \t{v['std']}")
+
+def get_min_max_with_percentile(values, lower_percentile=5,upper_percentile=95):
+    result={}
+    for i in range(6):
+        intervals_for_bag_class={}
+        for k in range(6):
+            data=values[i][k]
+            interval={
+                "min":np.percentile(data,lower_percentile),
+                "max":np.percentile(data,upper_percentile)
+            }
+            intervals_for_bag_class[k]=interval
+        result[i]=intervals_for_bag_class
+    return result
+
+
+
+def aggregate_labels(statlist):
+    stats={}
+    for i in range(6):
+        labeled= list(filter(lambda x: x['label']==i,statlist))
+        length=len(labeled)
+        result_dict={j:[] for j in range(6)}
+        for index, data in enumerate(labeled):
+            for k in range(6):
+                result_dict[k].extend(data[k])
+        stats[i]=result_dict
+    return stats
+            

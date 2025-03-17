@@ -15,18 +15,15 @@ class ImageComposer():
         self.min_max_coords = min_max_coords
         self.data = data
 
-    def create_composed_images(self, input_path,output_path):
+    def create_composed_images(self, input_path,output_path,label):
         if os.path.exists(output_path):
             shutil.rmtree(output_path)
         Path(output_path).mkdir(parents=True, exist_ok=True)
         for image_data in self.data:
             x = image_data['x']
             y = image_data['y']
-            image_path = f"{x}_{y}.png"
-            image = cv2.imread(f"{input_path}/{image_path}")
-            height, width, _ = image.shape
-            attention_image=create_attention_image(image_data['predicted_label'],image_data['value'],height,width)
-            output_image=ImageFusion.add_images(image, attention_image,0.5)
+           
+            output_image=compose_single_image(input_path, (x,y))
 
             shifted_x=x-self.min_max_coords['min_x']
             shifted_y=y-self.min_max_coords['min_y']
@@ -34,9 +31,17 @@ class ImageComposer():
             out_path=os.path.join(output_path,image_path)
             success=cv2.imwrite(out_path,output_image)
 
+def compose_single_image(self, input_path, coords,label,value):
+    image_path = f"{coords[0]}_{coords[1]}.png"
+    image = cv2.imread(f"{input_path}/{image_path}")
+    height, width, _ = image.shape
+    attention_image=create_attention_image(label,value,height,width)
+    return ImageFusion.add_images(image, attention_image,0.5)
+
 
 def create_attention_image(label, value, height, width):
     color=ATTENTION_COLORS[label]
+    colort = tuple(x * value for x in color)
     return np.full((height, width, 3), color, dtype=np.uint8)
 
 ATTENTION_COLORS = {
