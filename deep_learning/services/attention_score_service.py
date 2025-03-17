@@ -67,6 +67,11 @@ def get_statistics_from_attention_scores(A):
             'std':float(A[i,:].std())
         }
     return result
+def get_attention_scores_for_each_class(A):
+    result={}
+    for i in range(A.shape[0]):
+        result[i]=A[i,:]
+    return result
 
 def print_attention_scores_statistics(stats):
     for k,v in stats.items():
