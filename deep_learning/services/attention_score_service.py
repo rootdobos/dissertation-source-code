@@ -23,12 +23,16 @@ def get_attention_scores(model, features,k=1, to_device=True):
 def get_best_attention_scores(model, features):
     Y_prob,A=get_attention_scores(model,features)
     print(Y_prob)
-    #print(A.shape)
-    #print(A)
+
     best_scores=[{"value":np.max(A[:,i]), 
                  "predicted_label":np.argmax(A[:,i])} for i in range(A.shape[1])]
     return best_scores
-    #print(best_scores)
+
+def get_attention_scores_for_classes(model, features):
+    Y_prob,A=get_attention_scores(model, features,1)
+    stats=get_attention_scores_for_each_class(A)
+
+    return Y_prob.argmax().item(),stats
 
 def get_tiles_coords(path):
     files = next(os.walk(path))
@@ -45,16 +49,16 @@ def get_tiles_coords(path):
 
 
 def pair_coords_and_attention_scores(scores, coords):
-    return [{**score, **coord} for score, coord in zip(scores, coords)]
+    return {"coords":coords,**scores}
 
 
 def get_min_max_coordinates(data):
-    df = pd.DataFrame(data)
+    df = pd.DataFrame(data['coords'])
     return {
         'min_x': df['x'].min(),
         'max_x': df['x'].max(),
         'min_y': df['y'].min(),
-        'max_y': df['y'].min()
+        'max_y': df['y'].max()
     }
 
 def get_statistics_from_attention_scores(A):
@@ -89,7 +93,8 @@ def get_min_max_with_percentile(values, lower_percentile=5,upper_percentile=95):
             data=values[i][k]
             interval={
                 "min":np.percentile(data,lower_percentile),
-                "max":np.percentile(data,upper_percentile)
+                "max":np.percentile(data,upper_percentile),
+                "median":np.median(data),
             }
             intervals_for_bag_class[k]=interval
         result[i]=intervals_for_bag_class
