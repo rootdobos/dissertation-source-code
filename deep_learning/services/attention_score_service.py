@@ -1,9 +1,30 @@
 import torch
-device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import numpy as np
 import pandas as pd
 import os 
 
+from ..models.attention_core.clam import ClamSimple
+from .file_and_data_service import FileDataService
+
+device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
+class AttentionScoreService():
+    @staticmethod
+    def get_attention_scores_from_features(model_name,model_weights_path, features_path):
+        
+        model=ClamSimple(
+            feature_vector_length=1280,
+            dropout=0.1,
+            k_sample=8,
+            n_classes=6,
+            subtyping=False
+        )
+        model.load_state_dict(torch.load(model_weights_path))
+
+        features= FileDataService.load_slide_features(features_path)
+
+        Y_prob,A = get_attention_scores(model,features)
+        return Y_prob,A
+    
 def get_attention_scores(model, features,k=1, to_device=True):
     if to_device:
         _= model.to(device)

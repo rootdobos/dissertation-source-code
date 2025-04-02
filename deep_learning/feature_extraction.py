@@ -1,8 +1,8 @@
 import sys
-from loaders.image_batch_loader import load_batch_from_dir
-from models.feature_extractors.resnet import Resnet50
-from models.feature_extractors.efficientnet import EfficientNetB1
-from models.transforms.transforms import transform_resnet, transform_efficientNet
+from .loaders.image_batch_loader import load_batch_from_dir
+from .models.feature_extractors.resnet import Resnet50
+from .models.feature_extractors.efficientnet import EfficientNetB1
+from .models.transforms.transforms import transform_resnet, transform_efficientNet
 import torch
 from tqdm import tqdm
 
