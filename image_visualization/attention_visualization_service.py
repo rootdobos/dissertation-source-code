@@ -2,9 +2,30 @@ import os
 import pandas as pd
 import numpy as np
 import cv2
-from image_visualization.image_fusion import ImageFusion
+from .image_fusion import ImageFusion
 import shutil
 from pathlib import Path
+
+from ..deep_learning.services.attention_score_service import get_tiles_coords, pair_coords_and_attention_scores, get_min_max_coordinates
+
+
+class AttentionVisualizationService():
+    @staticmethod
+    def create_visualization(tile_size, tiles_path, output_dir, scores, label):
+
+        coords = get_tiles_coords(tiles_path)
+        data = pair_coords_and_attention_scores(scores, coords)
+        min_max_coords = get_min_max_coordinates(data)
+        intervals = {
+            "0": (-3, 2),
+            "1": (-3, 2),
+            "2": (-2, 2),
+            "3": (-2, 2),
+            "4": (-2, 2),
+            "5": (-1, 2)
+        }
+        composer = ImageComposer(tile_size, min_max_coords, data, intervals)
+        composer.create_composed_images(tiles_path, output_dir, str(label))
 
 
 class ImageComposer():
@@ -15,22 +36,21 @@ class ImageComposer():
         self.assembly_height = (self.height_units+1)*tile_size
         self.tile_size = tile_size
         self.min_max_coords = min_max_coords
+        self.intervals = intervals
         length = len(data['coords'])
         self.data = [{key: data[key][i] for key in data}
                      for i in range(length)]
-        self.intervals = intervals
 
     def create_composed_images(self, input_path, output_path, label):
         if os.path.exists(output_path):
             shutil.rmtree(output_path)
         Path(output_path).mkdir(parents=True, exist_ok=True)
         for image_data in self.data:
-
             x = image_data['coords']['x']
             y = image_data['coords']['y']
 
             output_image = self.compose_single_image(
-                input_path, (x, y), label,image_data[label])
+                input_path, (x, y), label, image_data[label])
 
             shifted_x = x-self.min_max_coords['min_x']
             shifted_y = y-self.min_max_coords['min_y']
@@ -61,10 +81,10 @@ def interpolate_value(interval, value):
 
 
 ATTENTION_COLORS = {
-    0: (255, 165, 0),   # Blue
-    1: (255, 255, 0),   # Cyan
-    2: (0, 255, 0),     # Green
-    3: (0, 255, 255),   # Yellow
-    4: (0, 165, 255),   # Orange
-    5: (0, 0, 255)      # Red
+    "0": (255, 165, 0),   # Blue
+    "1": (255, 255, 0),   # Cyan
+    "2": (0, 255, 0),     # Green
+    "3": (0, 255, 255),   # Yellow
+    "4": (0, 165, 255),   # Orange
+    "5": (0, 0, 255)      # Red
 }
