@@ -26,12 +26,13 @@ class FileDataService():
             {"coords": coords})
         columnCount = min_max_coords['max_x'] - min_max_coords['min_x']
         rowCount = min_max_coords['max_y'] - min_max_coords['min_y']
+        images = [{"path": path, **c} for path, c in zip(image_paths, coords)]
         return {
             "columnCount": int(columnCount),
             "rowCount": int(rowCount),
             "minX": int(min_max_coords['min_x']),
             "minY": int(min_max_coords['min_y']),
-            "imagePaths": image_paths
+            "images": images
         }
 
     @staticmethod
