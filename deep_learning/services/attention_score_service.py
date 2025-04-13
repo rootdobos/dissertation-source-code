@@ -61,32 +61,8 @@ def get_attention_scores_for_classes(model, features):
     return Y_prob, stats
 
 
-def get_tiles_coords(path):
-    files = next(os.walk(path))
-    images = files[2]
-    coords = []
-    for image_path in images:
-        coord = image_path.split('.')[0].split('_')
-        coords.append({
-            "x": int(coord[0]),
-            "y": int(coord[1])
-
-        })
-    return coords
-
-
 def pair_coords_and_attention_scores(scores, coords):
     return {"coords": coords, **scores}
-
-
-def get_min_max_coordinates(data):
-    df = pd.DataFrame(data['coords'])
-    return {
-        'min_x': df['x'].min(),
-        'max_x': df['x'].max(),
-        'min_y': df['y'].min(),
-        'max_y': df['y'].max()
-    }
 
 
 def get_statistics_from_attention_scores(A):

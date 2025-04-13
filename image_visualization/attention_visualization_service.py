@@ -6,16 +6,16 @@ from .image_fusion import ImageFusion
 import shutil
 from pathlib import Path
 
-from ..deep_learning.services.attention_score_service import get_tiles_coords, pair_coords_and_attention_scores, get_min_max_coordinates
-
+from ..deep_learning.services.attention_score_service import pair_coords_and_attention_scores
+from ..deep_learning.services.file_and_data_service import FileDataService
 
 class AttentionVisualizationService():
     @staticmethod
     def create_visualization(tile_size, tiles_path, output_dir, scores, label):
 
-        coords = get_tiles_coords(tiles_path)
+        coords = FileDataService.get_tiles_coords(tiles_path)
         data = pair_coords_and_attention_scores(scores, coords)
-        min_max_coords = get_min_max_coordinates(data)
+        min_max_coords = FileDataService.get_min_max_coordinates(data)
         intervals = {
             "0": (-3, 2),
             "1": (-3, 2),
