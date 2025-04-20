@@ -54,7 +54,7 @@ class ImageComposer():
 
             shifted_x = x-self.min_max_coords['min_x']
             shifted_y = y-self.min_max_coords['min_y']
-            image_path = f"{shifted_x}_{shifted_y}.png"
+            image_path = f"{x}_{y}.png"
             out_path = os.path.join(output_path, image_path)
             success = cv2.imwrite(out_path, output_image)
 
