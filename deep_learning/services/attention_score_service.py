@@ -20,7 +20,10 @@ class AttentionScoreService():
             n_classes=6,
             subtyping=False
         )
-        model.load_state_dict(torch.load(model_weights_path))
+        if torch.cuda.is_available():
+            model.load_state_dict(torch.load(model_weights_path))
+        else:
+            model.load_state_dict(torch.load(model_weights_path, map_location=torch.device('cpu')))
 
         features = FileDataService.load_slide_features(features_path)
 
