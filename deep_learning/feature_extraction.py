@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader
 import pandas as pd
 import os
 
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 device = torch.device(
     'cuda') if torch.cuda.is_available() else torch.device('cpu')

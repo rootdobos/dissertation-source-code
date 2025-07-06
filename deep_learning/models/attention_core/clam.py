@@ -28,6 +28,9 @@ class Clam(nn.Module):
         self.n_classes = n_classes
         self.subtyping = subtyping
 
+    def A_function(self, A):
+        return F.softmax(A, dim=1)
+
     def common_forward_part_before_logits(self, h, label, instance_eval, attention_only):
         A, h = self.attention_net(h)
         A = torch.transpose(A, 1, 0)
@@ -35,7 +38,7 @@ class Clam(nn.Module):
             return A
 
         A_raw = A
-        A = F.softmax(A, dim=1)
+        A = self.A_function(A)
         total_inst_loss = 0.0
         all_preds = []
         all_targets = []
@@ -155,3 +158,19 @@ class ClamSimple(Clam):
 
             logits = logits.reshape(1, 6)
             return self.common_forward_part_after_logits(logits, M, A_raw, instance_eval, return_features, total_inst_loss, all_targets, all_preds)
+
+class ClamSigmoid(Clam):
+    def __init__(self, feature_vector_length=1024, dropout=0., k_sample=8, n_classes=2,
+                 loss_fn=nn.CrossEntropyLoss(), subtyping=False,):
+        super().__init__(feature_vector_length, dropout, k_sample, n_classes,
+                         loss_fn, subtyping)
+    def A_function(self, A):
+        return torch.sigmoid(A)
+    
+class ClamSimpleSigmoid(ClamSimple):
+    def __init__(self, feature_vector_length=1024, dropout=0., k_sample=8, n_classes=2,
+                 loss_fn=nn.CrossEntropyLoss(), subtyping=False,):
+        super().__init__(feature_vector_length, dropout, k_sample, n_classes,
+                         loss_fn, subtyping)
+    def A_function(self, A):
+        return torch.sigmoid(A)
