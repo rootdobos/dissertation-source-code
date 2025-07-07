@@ -11,19 +11,11 @@ from ..deep_learning.services.file_and_data_service import FileDataService
 
 class AttentionVisualizationService():
     @staticmethod
-    def create_visualization(tile_size, tiles_path, output_dir, scores, label):
+    def create_visualization(tile_size, tiles_path, output_dir, scores, label, intervals):
 
         coords = FileDataService.get_tiles_coords(tiles_path)
         data = pair_coords_and_attention_scores(scores, coords)
         min_max_coords = FileDataService.get_min_max_coordinates(data)
-        intervals = {
-            "0": (-3, 2),
-            "1": (-3, 2),
-            "2": (-2, 2),
-            "3": (-2, 2),
-            "4": (-2, 2),
-            "5": (-1, 2)
-        }
         composer = ImageComposer(tile_size, min_max_coords, data, intervals)
         composer.create_composed_images(tiles_path, output_dir, str(label))
 

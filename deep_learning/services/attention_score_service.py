@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import os
 
-from ..models.attention_core.clam import ClamSimple
+from ..models.attention_core.clam import Clam,ClamSimple, ClamSigmoid, ClamSimpleSigmoid
 from .file_and_data_service import FileDataService
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -12,14 +12,42 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class AttentionScoreService():
     @staticmethod
     def get_attention_scores_from_features(model_name, model_weights_path, features_path):
+        encoder, classifier = model_name.split('_')
+        feature_length = 1280 if encoder=="efficientnet" else 2048
+        match classifier:
+            case "clam":
+                model = Clam(
+                    feature_vector_length=feature_length,
+                    dropout=0.1,
+                    k_sample=8,
+                    n_classes=6,
+                    subtyping=False
+                )
+            case "clamsimple":
+                model = ClamSimple(
+                    feature_vector_length=feature_length,
+                    dropout=0.1,
+                    k_sample=8,
+                    n_classes=6,
+                    subtyping=False
+                )
+            case "clamsigmoid":
+                model = ClamSigmoid(
+                    feature_vector_length=feature_length,
+                    dropout=0.1,
+                    k_sample=8,
+                    n_classes=6,
+                    subtyping=False
+                )
+            case "clamsimplesigmoid":
+                model = ClamSimpleSigmoid(
+                    feature_vector_length=feature_length,
+                    dropout=0.1,
+                    k_sample=8,
+                    n_classes=6,
+                    subtyping=False
+                )
 
-        model = ClamSimple(
-            feature_vector_length=1280,
-            dropout=0.1,
-            k_sample=8,
-            n_classes=6,
-            subtyping=False
-        )
         if torch.cuda.is_available():
             model.load_state_dict(torch.load(model_weights_path))
         else:
