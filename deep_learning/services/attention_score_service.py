@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import pandas as pd
 import os
-
+import logging
 from ..models.attention_core.clam import Clam,ClamSimple, ClamSigmoid, ClamSimpleSigmoid
 from .file_and_data_service import FileDataService
 
@@ -51,6 +51,7 @@ class AttentionScoreService():
         if torch.cuda.is_available():
             model.load_state_dict(torch.load(model_weights_path))
         else:
+            logging.info("CPU Mode Attention Score")
             model.load_state_dict(torch.load(model_weights_path, map_location=torch.device('cpu')))
 
         features = FileDataService.load_slide_features(features_path)

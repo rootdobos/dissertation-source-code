@@ -19,14 +19,15 @@ class FileDataService():
         return feature_vector.squeeze()
 
     @staticmethod
-    def get_visualized_tiles_response(dir):
+    def get_visualized_tiles_response(dir, main_folder):
         image_paths = os.listdir(dir)
         coords = FileDataService.get_tiles_coords(dir)
         min_max_coords = FileDataService.get_min_max_coordinates(
             {"coords": coords})
         columnCount = min_max_coords['max_x'] - min_max_coords['min_x']
         rowCount = min_max_coords['max_y'] - min_max_coords['min_y']
-        images = [{"path": path, **c} for path, c in zip(image_paths, coords)]
+        images = [{"path": os.path.join(main_folder, path), **c}
+                  for path, c in zip(image_paths, coords)]
         return {
             "columnCount": int(columnCount),
             "rowCount": int(rowCount),
